@@ -123,9 +123,6 @@ document.addEventListener('DOMContentLoaded', function() {
         ctx.fillStyle = fill;
         ctx.fill();
         ctx.closePath();
-        
-        // Display coordinates
-        coordinatesDiv.innerHTML += `Point: (${x}, ${y})<br>`;
     }
     function animateStep(statusDiv) {
         if (currentAnimationStep >= animationSequence.length) {
@@ -154,13 +151,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Draw points
         step.points.forEach(([x, y], idx) => {
             drawPoint(x, y);
-            coordinatesDiv.innerHTML += `Point ${idx}: (${x}, ${y})<br>`;
         });
         
         // Draw uninserted points
         step.uninserted_points.forEach(([x, y], idx) => {
             drawPoint(x, y, 'blue');
-            coordinatesDiv.innerHTML += `Point ${idx}: (${x}, ${y})<br>`;
         });
 
         // Draw edges
@@ -176,7 +171,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Draw circles
         step.circles.forEach(([x, y, radius]) => {
             drawCircle(x, y, radius, `hsl(${currentAnimationStep * 60 + 180}, 100%, 50%)`);
-            coordinatesDiv.innerHTML += `Circle: center (${x}, ${y}), radius ${radius}<br>`;
         });
         
         currentAnimationStep++;

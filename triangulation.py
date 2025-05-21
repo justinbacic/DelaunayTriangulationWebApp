@@ -125,9 +125,9 @@ class Triangulation:
         dx, dy = max_x - min_x, max_y - min_y
         delta_max = max(dx, dy) *1.1
 
-        v1 = self.insert_point(round(min_x - delta_max,2), round(min_y - delta_max/2,2))
-        v2 = self.insert_point(round(max_x + delta_max,2), round(min_y - delta_max/2,2))
-        v3 = self.insert_point(round((min_x + max_x) / 2,2), round(max_y + delta_max,2))
+        v2 = self.insert_point(round(min_x - delta_max,2), round(max_y + delta_max/2,2))
+        v1 = self.insert_point(round(max_x + delta_max,2), round(max_y + delta_max/2,2))
+        v3 = self.insert_point(round((min_x + max_x) / 2,2), round(min_y - delta_max,2))
 
         self.insert_triangle(v1, v2, v3)
         edge1 = set([(v1.x,v1.y),(v2.x,v2.y)])
