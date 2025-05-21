@@ -3,7 +3,7 @@ import triangulation as tri
 
 app = Flask(__name__)
 
-# Store points in memory (in a real app, use a database)
+# Store points in memory
 points = []
 
 @app.route('/')
@@ -27,6 +27,7 @@ def clear_points():
     global points
     points = []
     return jsonify(success=True)
+
 @app.route('/get_drawing_sequence', methods=['GET'])
 def get_drawing_sequence():
     triang = tri.Triangulation(points)
@@ -36,24 +37,6 @@ def get_drawing_sequence():
         print(i)
         drawing_sequence.append(triang.convert_record(i))
     return jsonify(drawing_sequence)
-'''@app.route('/get_predefined_data', methods=['GET'])
-def get_predefined_data():
-    triang = tri.Triangulation(points)
-    records = triang.incremental_delaunay()
-    record = records[0]
-    predefined_points = []
-    for i in record["inserted"]:
-        predefined_points.append(i)
-    edges = []
-    for i in record["edges"]:
-        cur_edge = []
-        for j in i:
-            cur_edge.append(j)
-        edges.append(cur_edge)
-    return jsonify({
-        'points': points,
-        'edges': edges
-    })'''
 
 if __name__ == '__main__':
     app.run(debug=True)
