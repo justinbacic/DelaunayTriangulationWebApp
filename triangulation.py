@@ -80,8 +80,40 @@ class Triangulation:
         self.Tricount = 1
         self.Edgecount = 3
         self.root = tk.Tk()
-        
+        self.record = []
+        self.updates = 0
         self.speed = speed
+        self.supertriangle_edges = []
+
+    def update_plot(self,circle = None,last=False):
+        new_step = {}
+        #new_step["step"] = self.updates
+        self.updates = self.updates + 1
+        inserted_points = []
+        for i in self.vertices:
+            inserted_points.append((i.x,i.y))
+        new_step["inserted"] = inserted_points
+        uninserted = []
+        for i in self.uninserted_points:
+            uninserted.append(i)
+        new_step["uninserted"] = uninserted
+        edges = []
+        edges.extend(self.supertriangle_edges)
+        for i in self.half_edges:
+            if i.twin:
+                cur_edge = set()
+                cur_edge.add((i.origin.x,i.origin.y))
+                cur_edge.add((i.twin.origin.x,i.twin.origin.y))
+                if cur_edge not in edges:
+                    edges.append(cur_edge)
+        new_step["edges"] = edges
+        if circle is not None:
+            new_step["circle"] = [circle]
+        else:
+            new_step["circle"] = []
+        if new_step not in self.record or last:
+            self.record.append(new_step)
+        
 
     def create_supertriangle(self):
         """Creates a supertriangle large enough to contain all points."""
@@ -98,16 +130,19 @@ class Triangulation:
         v3 = self.insert_point(round((min_x + max_x) / 2,2), round(max_y + delta_max,2))
 
         self.insert_triangle(v1, v2, v3)
-        
+        edge1 = set([(v1.x,v1.y),(v2.x,v2.y)])
+        edge2 = set([(v1.x,v1.y),(v3.x,v3.y)])
+        edge3 = set([(v2.x,v2.y),(v3.x,v3.y)])
+        self.supertriangle_edges.extend([edge1,edge2,edge3])
         # Assign all uninserted points to this supertriangle
         supertriangle = self.faces[0]
         pointsInTriangle = set()
         for point in self.uninserted_points:
-            print(point)
             self.point_triangle_map[point] = supertriangle
             pointsInTriangle.add(point)
         #Map triangle to all points
         self.triangle_point_map[supertriangle] = pointsInTriangle
+        self.update_plot()
 
 
     def insert_point(self, x, y):
@@ -128,7 +163,7 @@ class Triangulation:
         e1.origin, e2.origin, e3.origin = v1, v2, v3
         e1.next, e2.next, e3.next = e2, e3, e1
         e1.prev, e2.prev, e3.prev = e3, e1, e2
-        print("For vertices",v1, v2, v3,"\nEdge 1: ",e1,"\nEdge 2: ",e2,"\nEdge 3: ",e3,"\n")
+        #print("For vertices",v1, v2, v3,"\nEdge 1: ",e1,"\nEdge 2: ",e2,"\nEdge 3: ",e3,"\n")
         # Add the new edges to the incident_edges set of the vertices
         v1.incident_edges.add(e1)
         v2.incident_edges.add(e2)
@@ -139,7 +174,7 @@ class Triangulation:
         face.outer_component = e1
         e1.face = e2.face = e3.face = face
         self.half_edges.extend([e1, e2, e3])
-        print("Adding edges in insert_triangulation: ", e1, e2, e3)
+        #print("Adding edges in insert_triangulation: ", e1, e2, e3)
         self.faces.append(face)
         
 
@@ -174,11 +209,11 @@ class Triangulation:
         e1.face = e2.face = e3.face = face
         if e1Existed:
             self.half_edges.extend([e2, e3])
-            print("Inserting edges in insert new triangulation: ", e1, e2, e3)
+            #print("Inserting edges in insert new triangulation: ", e1, e2, e3)
             self.Edgecount += 2
         else:
             self.half_edges.extend([e1, e2, e3])
-            print("Inserting edges in insert new triangulation else: ", e1, e2, e3)
+            #print("Inserting edges in insert new triangulation else: ", e1, e2, e3)
             self.Edgecount += 3
         self.faces.append(face)
         self.Tricount += 1
@@ -290,7 +325,7 @@ class Triangulation:
         # Check the in-circle condition before flipping
         if not self.in_circle(a, b, c, d):
             return  # No flip needed
-        
+        #self.update_plot()
         #plot_triangulation(self)
         face1 = edge.face
         face2 = twin.face
@@ -328,10 +363,6 @@ class Triangulation:
         c.incident_edges.add(edge)
         d.incident_edges.add(twin)
         
-
-        
-        
-
         # Create new faces after the flip
         new_face1 = Face(self.curFaceID)
         self.curFaceID += 1
@@ -350,24 +381,26 @@ class Triangulation:
         # Add the new faces to the structure
         self.faces.append(new_face1)
         self.faces.append(new_face2)
+        self.update_plot()
         # Recurse on the neighboring edges
         self.flip_edge(edge.next)
         self.flip_edge(edge.prev)
         self.flip_edge(twin.next)
         self.flip_edge(twin.prev)
-        print("\nFlipped an EDGE!!!!\n")
+        #print("\nFlipped an EDGE!!!!\n")
     def circumcenter(self,ax,ay,bx,by,cx,cy):
         d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by))
         ux = ((ax * ax + ay * ay) * (by - cy) + (bx * bx + by * by) * (cy - ay) + (cx * cx + cy * cy) * (ay - by)) / d
         uy = ((ax * ax + ay * ay) * (cx - bx) + (bx * bx + by * by) * (ax - cx) + (cx * cx + cy * cy) * (bx - ax)) / d
-        return (ux, uy)
+        return (round(ux,2), round(uy,2))
     def in_circle(self, a, b, c, d):
         """Returns True if point d is inside the circumcircle of triangle (a, b, c)."""
         ax, ay = a.x, a.y
         bx, by = b.x, b.y
         cx, cy = c.x, c.y
         dx, dy = d.x, d.y
-        center = self.circumcenter(ax,ay,bx,by,cx,cy)
+        center_x, center_y = self.circumcenter(ax,ay,bx,by,cx,cy)
+        self.update_plot((center_x,center_y,round(math.dist((a.x,a.y),(center_x,center_y)),0)))
         # Determinant method
         matrix = [
             [ax - dx, ay - dy, (ax - dx) ** 2 + (ay - dy) ** 2],
@@ -403,8 +436,6 @@ class Triangulation:
         if not triangle:
             print(f"Error: No containing triangle found for {point}")
             return
-        else:
-            print("Point", point, "In Triangle", triangle,"\n")
         
         # Remove the old triangle and insert 3 new ones
         self.faces.remove(triangle)
@@ -425,6 +456,7 @@ class Triangulation:
         self.linkTriangles(t1,t2,t3)
         self.updateBuckets(triangle, point, t1, t2, t3)
         self.triangle_point_map.pop(triangle)
+        self.update_plot()
         # Flip edges if necessary
         for tri in [t1, t2, t3]:
             for edge in [tri.outer_component, tri.outer_component.next, tri.outer_component.prev]:
@@ -437,6 +469,8 @@ class Triangulation:
         while self.uninserted_points:
             point = self.uninserted_points.pop(0)
             self.retriangulate(point)
+        self.update_plot(last=True)
+        return self.record
     def print_edges(self):
         """Prints unique edges in the triangulation."""
         printed_edges = set()
@@ -457,125 +491,84 @@ class Triangulation:
             print(f"Error {len(self.half_edges)} edges, expected {self.Edgecount}\n")
         else:
             print("Yessir\n")
-    def get_state(self):
-        """Return the current state as a serializable dictionary"""
-        return {
-            'vertices': [(v.x, v.y) for v in self.vertices],
-            'edges': self._get_unique_edges(),
-            'faces': [self._face_to_dict(f) for f in self.faces]
-        }
-    
-    def _get_unique_edges(self):
+    def convert_record(self, record):
+        new_record = {}
+        points = []
+        for i in record["inserted"]:
+            points.append(i)
+        uninserted_points = []
+        for i in record["uninserted"]:
+            uninserted_points.append(i)
         edges = []
-        edge_ids = set()
-        for edge in self.half_edges:
-            if edge.id not in edge_ids:
-                edges.append({
-                    'x1': edge.origin.x,
-                    'y1': edge.origin.y,
-                    'x2': edge.next.origin.x,
-                    'y2': edge.next.origin.y
-                })
-                edge_ids.add(edge.id)
-        return edges
+        for i in record["edges"]:
+            cur_edge = []
+            for j in i:
+                cur_edge.append(j)
+            edges.append(cur_edge)
+        new_record["points"] = points
+        new_record["edges"] = edges
+        new_record["uninserted_points"] = uninserted_points
+        new_record["circles"] = record["circle"]
+        return new_record
+
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from matplotlib.collections import LineCollection
+import numpy as np
+
+def plot_elements(record, 
+               edge_color='blue', point_color='red', circle_color='green',
+                 point_size=5, circle_alpha=0.2):
+    """
+    Plots edges (lines), points, and circles on a 2D plane.
     
-    def _face_to_dict(self, face):
-        edges = [face.outer_component, face.outer_component.next, face.outer_component.prev]
-        return {
-            'vertices': [(e.origin.x, e.origin.y) for e in edges]
-        }
-class VisualizationWindow:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Point Adder")
-        self.xmin = 0
-        self.xmax = 10
-        self.ymin = 0
-        self.ymax = 10
-        # Set up the canvas and plot
-        self.figure, self.ax = plt.subplots()
-        self.ax.set_xlim(self.xmin, self.xmax)
-        self.ax.set_ylim(self.ymin, self.ymax)
-        
+    Parameters:
+    - edges: List of edges, where each edge is a tuple of two points [(x1, y1), (x2, y2)].
+    - points: List of points, where each point is a tuple (x, y).
+    - circles: List of circles, where each circle is a tuple (x, y, radius).
+    """
+    fig, ax = plt.subplots()
+    edges = []
+    for i in record["edges"]:
+        cur_edge = []
+        for j in i:
+            cur_edge.append(j)
+        edges.append(cur_edge)
+    # Plot edges (if provided)
+    if edges is not None:
+        edge_segments = LineCollection(edges, colors=edge_color, linewidths=1)
+        ax.add_collection(edge_segments)
+    points = []
+    for i in record["inserted"]:
+        points.append(i)
+    # Plot points (if provided)
+    if points is not None:
+        x_coords = [p[0] for p in points]
+        y_coords = [p[1] for p in points]
+        ax.scatter(x_coords, y_coords, color=point_color, s=point_size)
+    circles = None
+    if record["circle"] is not None:
+        circles = record["circle"]
+    # Plot circles (if provided)
+    if circles is not None:
+        for circle in circles:
+            x, y, radius = circle
+            circle_patch = patches.Circle((x, y), radius, 
+                                         color=circle_color, alpha=circle_alpha)
+            ax.add_patch(circle_patch)
+    
+    # Adjust axis limits
+    ax.autoscale()
+    ax.set_aspect('equal', adjustable='box')
+    plt.xlabel('X-axis')
+    plt.ylabel('Y-axis')
+    plt.title('Plot of Edges, Points, and Circles')
+    plt.grid(True)
+    plt.show()
 
-        # Add the canvas to the Tkinter window
-        self.canvas = FigureCanvasTkAgg(self.figure, master=root)
-        self.canvas.get_tk_widget().pack()
+#tri = Triangulation([(1,2),(3,5),(8,10)])
+#records = tri.incremental_delaunay()
 
-        # List to store points
-        self.points = []
-
-        # Bind click event to add points
-        self.canvas.mpl_connect('button_press_event', self.on_click)
-
-        # Submit Button
-        self.submit_button = tk.Button(root, text="Submit in Order", command=self.submit)
-        self.submit_button.pack()
-        self.submit_rand_button = tk.Button(root, text="Submit in Random Order", command=self.submit_random)
-        self.submit_rand_button.pack()
-    def setLimits(self,x1,x2,y1,y2):
-        self.xmin = x1
-        self.xmax = x2
-        self.ymin = y1
-        self.ymax = y2
-    def updateWindow(self, uninserted_points, vertices,half_edges,speed,circles = None):
-        self.ax.clear()
-        self.ax.set_xlim(self.xmin,self.xmax)
-        self.ax.set_ylim(self.ymin, self.ymax)
-        x_vals_uninserted = []
-        y_vals_uninserted = []
-        for i in uninserted_points:
-            x_vals_uninserted.append(i[0])
-            y_vals_uninserted.append(i[1])
-        self.ax.scatter(x_vals_uninserted, y_vals_uninserted,c='red')
-        x_vals_inserted = []
-        y_vals_inserted = []
-        for i in half_edges:
-            x1 = i.origin.x
-            y1 = i.origin.y
-            x2 = i.next.origin.x
-            y2 = i.next.origin.y
-            self.ax.plot([x1, x2], [y1, y2],c='black',zorder=1)
-        for i in vertices:
-            x_vals_inserted.append(i.x)
-            y_vals_inserted.append(i.y)
-        self.ax.scatter(x_vals_inserted, y_vals_inserted,c='blue',zorder=2)
-        if circles is not None:
-            self.ax.add_patch(circles)
-        self.ax.set_xlabel("X Axis")
-        self.ax.set_ylabel("Y Axis")
-        self.ax.set_title("Triangulation Visualization")
-        self.canvas.draw()
-        plt.pause(speed)
-        #self.figure.pause(speed)
-    def on_click(self, event):
-        """Handle mouse click to add a point."""
-        x, y = round(event.xdata,2), round(event.ydata,2)
-        if x is not None and y is not None:
-            if (x,y) not in self.points:
-                self.points.append((x, y))
-                self.ax.plot(x, y, 'bo')  # Plot the point
-                self.canvas.draw()  # Redraw the canvas
-
-    def submit(self):
-        """Generate a list of points and close the window."""
-        if not self.points:
-            messagebox.showwarning("No Points", "No points added!")
-        else:
-            print("Quitting")
-            self.root.quit()  # Close the Tkinter window
-            self.root.destroy()  # Immediately destroy the window'''
-    def submit_random(self):
-        """Generate a list of points and close the window."""
-        if not self.points:
-            messagebox.showwarning("No Points", "No points added!")
-        else:
-            random.shuffle(self.points)
-            print("Quitting")
-            self.root.quit()  # Close the Tkinter window
-            self.root.destroy()  # Immediately destroy the window'''
-
-    def get_points(self):
-        """Return the list of points."""
-        return self.points
-
+#for i in records:
+#    print(i)
+    #plot_elements(i)

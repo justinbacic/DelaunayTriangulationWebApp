@@ -1,54 +1,59 @@
 from flask import Flask, render_template, request, jsonify
-from triangulation import Triangulation  # Your existing class
-import json
-import time
+import triangulation as tri
 
 app = Flask(__name__)
 
-# Global variable to store triangulation state
-current_triangulation = None
+# Store points in memory (in a real app, use a database)
+points = []
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/init_triangulation', methods=['POST'])
-def init_triangulation():
-    global current_triangulation
-    points_temp = request.get_json().get('points', [])
-    points = []
-    for i in points_temp:
-        points.append((i[0],i[1]))
-    current_triangulation = Triangulation(points=points, speed=0)
-    current_triangulation.incremental_delaunay(getPoints=False)
-    return jsonify({'status': 'success'})
+@app.route('/save_point', methods=['POST'])
+def save_point():
+    data = request.get_json()
+    x = round(data['x'],2)
+    y = round(data['y'],2)
+    points.append((x, y))
+    return jsonify(success=True)
 
-@app.route('/get_triangulation_state', methods=['GET'])
-def get_triangulation_state():
-    if not current_triangulation:
-        return jsonify({'error': 'No triangulation initialized'})
-    
-    # Convert the triangulation state to JSON-serializable format
-    state = {
-        'vertices': [(v.x, v.y) for v in current_triangulation.vertices],
-        'edges': [],
-        'faces': []
-    }
-    
-    # Add edges (avoid duplicates by checking IDs)
-    edge_ids = set()
-    for edge in current_triangulation.half_edges:
-        if edge.id not in edge_ids:
-            state['edges'].append({
-                'id': edge.id,
-                'x1': edge.origin.x,
-                'y1': edge.origin.y,
-                'x2': edge.next.origin.x,
-                'y2': edge.next.origin.y
-            })
-            edge_ids.add(edge.id)
-    
-    return jsonify(state)
+@app.route('/get_points', methods=['GET'])
+def get_points():
+    return jsonify(points=points)
+
+@app.route('/clear_points', methods=['POST'])
+def clear_points():
+    global points
+    points = []
+    return jsonify(success=True)
+@app.route('/get_drawing_sequence', methods=['GET'])
+def get_drawing_sequence():
+    triang = tri.Triangulation(points)
+    records = triang.incremental_delaunay()
+    drawing_sequence = []
+    for i in records:
+        print(i)
+        drawing_sequence.append(triang.convert_record(i))
+    return jsonify(drawing_sequence)
+'''@app.route('/get_predefined_data', methods=['GET'])
+def get_predefined_data():
+    triang = tri.Triangulation(points)
+    records = triang.incremental_delaunay()
+    record = records[0]
+    predefined_points = []
+    for i in record["inserted"]:
+        predefined_points.append(i)
+    edges = []
+    for i in record["edges"]:
+        cur_edge = []
+        for j in i:
+            cur_edge.append(j)
+        edges.append(cur_edge)
+    return jsonify({
+        'points': points,
+        'edges': edges
+    })'''
 
 if __name__ == '__main__':
     app.run(debug=True)

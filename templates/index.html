@@ -1,50 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Delaunay Triangulation</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drawing App</title>
+    <link rel="stylesheet" href="../static/css/style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Delaunay Triangulation</h1>
-        
-        <div class="controls">
-            <button id="addPointBtn">Add Point</button>
-            <button id="runTriangulationBtn">Run Triangulation</button>
+    <h1>Drawing App</h1>
+    <div class="controls">
+        <button id="clearBtn">Clear Canvas</button>
+        <button id="runBtn">Run</button>
+        <div class="animation-controls">
+            <label for="speed-slider">Animation Speed:</label>
+            <input type="range" id="speed-slider" min="10" max="1000" value="0">
+            <span id="speed-value">1000ms</span>
+            <button id="pauseBtn" style="margin-left: 10px;">Pause</button>
         </div>
-        
-        <div class="canvas-container">
-    <canvas id="triangulationCanvas" width="600" height="400"></canvas>
-    <div class="canvas-border"></div>
-</div>
-
-<style>
-.canvas-container {
-    position: relative;
-    width: 600px;
-    height: 400px;
-    margin: 20px auto;
-    border: 2px solid #333;
-    box-shadow: 0 0 10px rgba(0,0,0,0.2);
-}
-
-#triangulationCanvas {
-    display: block;
-    background-color: #f9f9f9;
-}
-
-.canvas-border {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    border: 1px dashed #aaa;
-}
-</style>
     </div>
+    <canvas id="drawingCanvas" width="600" height="400"></canvas>
+    <div id="coordinates"></div>
 
-    <script src="{{ url_for('static', filename='js/triangulation.js') }}"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
