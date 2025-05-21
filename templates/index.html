@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Delaunay Triangulation</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Delaunay Triangulation</h1>
+        
+        <div class="controls">
+            <button id="addPointBtn">Add Point</button>
+            <button id="runTriangulationBtn">Run Triangulation</button>
+        </div>
+        
+        <div class="canvas-container">
+    <canvas id="triangulationCanvas" width="600" height="400"></canvas>
+    <div class="canvas-border"></div>
+</div>
+
+<style>
+.canvas-container {
+    position: relative;
+    width: 600px;
+    height: 400px;
+    margin: 20px auto;
+    border: 2px solid #333;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+
+#triangulationCanvas {
+    display: block;
+    background-color: #f9f9f9;
+}
+
+.canvas-border {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    border: 1px dashed #aaa;
+}
+</style>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/triangulation.js') }}"></script>
+</body>
+</html>
