@@ -88,9 +88,6 @@ document.addEventListener('DOMContentLoaded', function() {
         animationSequence = [];
         currentAnimationStep = 0;
         submitBtn.disabled = true; // Disable button when clearing
-        fetch('/clear_points', {
-            method: 'POST',
-        });
     });
     speedSlider.addEventListener('input', function() {
         animationDelay = 2010 - this.value; // Invert so higher slider = faster
@@ -108,14 +105,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         // Enable/disable run button based on point count
         submitBtn.disabled = points.length < 3;
-        // Send to server
-        fetch('/save_point', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({x, y}),
-        });
     });
     runBtn.addEventListener('click', function() {
         if(!manual){
@@ -124,22 +113,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         drawStep();
     });
-    
-    // Load existing points on page load
-    // Modify your initial points load to check count
-    fetch('/get_points')
-        .then(response => response.json())
-        .then(data => {
-            points = data.points.map(p => ({x: p[0], y: p[1]}));
-            points.forEach(p => drawPoint(p.x, p.y,'red'));
-            // Set initial run button state
-            submitBtn.disabled = points.length < 3;
-        });
     ////////
     //Async Functions
     ////////
     async function getSequence() {
-        const response = await fetch('/get_drawing_sequence');
+        const response = await fetch('/get_drawing_sequence', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ points: points })  // Send points as JSON
+        });
         animationSequence = await response.json();
         zoomToFit(animationSequence);
     }

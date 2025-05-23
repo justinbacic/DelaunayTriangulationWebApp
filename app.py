@@ -3,38 +3,21 @@ import triangulation as tri
 
 app = Flask(__name__)
 
-# Store points in memory
-points = []
-
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/save_point', methods=['POST'])
-def save_point():
-    data = request.get_json()
-    x = round(data['x'],2)
-    y = round(data['y'],2)
-    points.append((x, y))
-    return jsonify(success=True)
-
-@app.route('/get_points', methods=['GET'])
-def get_points():
-    return jsonify(points=points)
-
-@app.route('/clear_points', methods=['POST'])
-def clear_points():
-    global points
-    points = []
-    return jsonify(success=True)
-
-@app.route('/get_drawing_sequence', methods=['GET'])
+@app.route('/get_drawing_sequence', methods=['POST'])
 def get_drawing_sequence():
-    triang = tri.Triangulation(points)
+    data = request.get_json()  # Get JSON data from request
+    points = data['points']
+    formatted_points = []
+    for i in points:
+        formatted_points.append((i["x"],i["y"]))
+    triang = tri.Triangulation(formatted_points)
     records = triang.incremental_delaunay()
     drawing_sequence = []
     for i in records:
-        print(i)
         drawing_sequence.append(triang.convert_record(i))
     return jsonify(drawing_sequence)
 

@@ -36,7 +36,7 @@ p{
 }
 
 .ctrl-btn {
-    min-width: 75px;
+    min-width: 6vw;
     font-family: 'Times New Roman';
     background-color: #2e4670;
     color: white;
@@ -44,7 +44,7 @@ p{
     padding: 8px 10px;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 1.25vw;
     transition: all 0.2s ease;
 }
 .ctrl-btn:hover {
@@ -75,7 +75,6 @@ p{
     margin-bottom: 10px;
     display: flex;
     align-items: center;
-    font-size: 12px;
     padding: 10px;
     border-radius: 5px;
     gap: 10px;
@@ -85,18 +84,17 @@ p{
     justify-content: space-between; /* This will separate the two groups */
     align-items: center;
     border: 1px solid #000;
-    font-size: 12px;
     padding: 10px;
     border-radius: 5px;
 }
 .option-group {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: .5vw;
 }
 #slider-label{
     font-family: "Times New Roman";
-    font-size: 14px;
+    font-size: 1.25vw;
 }
 #speed-slider {
     width: 10vw; 
@@ -145,7 +143,7 @@ p{
 
 #speed-value {
     font-family: "Times New Roman";
-    font-size: 14px;
+    font-size: 1.15vw;
     display: inline-block;
     width: 40px;
     text-align: right;
@@ -155,9 +153,9 @@ p{
 
 #toggle-label {
     font-family: "Times New Roman";
-    font-size: 14px;
+    font-size: 1.25vw;
     display: inline-block;
-    width: 70px; /* Adjust this value based on your longest text */
+    width: 7vw; /* Adjust this value based on your longest text */
     text-align: center; /* Optional: aligns text to the right within the fixed width */
 }
 .switch {
