@@ -1,9 +1,5 @@
 import math
 import time
-import tkinter as tk
-from tkinter import messagebox
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import random
 from numpy import random
 import numpy as np
@@ -79,7 +75,6 @@ class Triangulation:
         # Create a supertriangle to contain all points
         self.Tricount = 1
         self.Edgecount = 3
-        self.root = tk.Tk()
         self.record = []
         self.updates = 0
         self.speed = speed

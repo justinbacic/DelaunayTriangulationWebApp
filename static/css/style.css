@@ -34,10 +34,9 @@ p{
 .controls {
     margin-bottom: 10px;
 }
-#runBtn {
-    min-width: 50px;  
-}
+
 .ctrl-btn {
+    min-width: 75px;
     font-family: 'Times New Roman';
     background-color: #2e4670;
     color: white;
