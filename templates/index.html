@@ -7,20 +7,62 @@
     <link rel="stylesheet" href="../static/css/style.css">
 </head>
 <body>
-    <h1>Delaunay Triangulation Visualization</h1>
+    <h1 id = "main-title">Delaunay Triangulation Visualization</h1>
     <div class="controls">
-        <button id="clearBtn">Clear Canvas</button>
-        <button id="runBtn">Run</button>
         <div class="animation-controls">
-            <label for="speed-slider">Animation Speed:</label>
-            <input type="range" id="speed-slider" min="10" max="1000" value="0">
-            <span id="speed-value">1000ms</span>
-            <button id="pauseBtn" style="margin-left: 10px;">Pause</button>
+            <div id="options">
+                <div class="option-group">
+                    <button class = "ctrl-btn" id="clearBtn">Clear</button>
+                    <button class = "ctrl-btn" id="submitBtn" disabled>Submit</button>
+                    <button class = "ctrl-btn" id="runBtn" disabled>Run</button>
+                    <button class = "ctrl-btn" id="pauseBtn" disabled>Pause</button>
+                    <label id="toggle-label">Automatic</label>
+                    <label class="switch">
+                        <input type="checkbox" id="featureToggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div class="option-group">
+                    
+                
+                    <label id="slider-label">Step Speed:</label>
+                    <input type="range" id="speed-slider" min="10" max="2000" value="1010">
+                    <span id="speed-value">1000ms</span>
+                </div>
+            </div>
+            
+            
         </div>
     </div>
-    <canvas id="drawingCanvas" width="600" height="400"></canvas>
-    <div id="coordinates"></div>
-
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <div class="canvas-container">
+        <canvas id="drawingCanvas" width="600" height="400"></canvas>
+    </div>
+    <div id="description">
+        <h2>How To Use</h2>
+        <p> &emsp;&emsp;&emsp;This visualization tool shows the steps taken during the incremental Delaunay Triangulation algorithm. 
+            The insertion order follow the order that the points were drawn on the canvas. 
+            To use this tool click on the canvas to add points, once you have the points press "Submit". 
+            Then you can either "Run" the incremental program at the desired speed or you can switch to Manual mode and press "Next" to go through each step. 
+            If you want to pause and switch from Automatic to Manual at any point you can. To input new points simply "Clear" the canvas and start again.
+        </p>
+        <h2>Delaunay Triangulations</h2>
+        <p>
+            &emsp;&emsp;&emsp;A Delaunay Triangulation is a specific type of triangulation that is used all the time in Geographic Information Systems (GIS).
+            They maximizes the minimum angle of the triangulation and thus gives us a triangulation where each triangle has angles that are similar to each other.
+            This is especially useful in GIS since it allows us our interpolations of data within each of these triangles to be likely more accurate than if we were using a triangulation that didn't have this property.
+        </p>
+        <h2>Incremental Construction Algorithm</h2>
+        <p>
+            &emsp;&emsp;&emsp;One of the popular ways to create a Delaunay Triangulation is through incremental construction.
+            The way this works is first a super triangle with dummy points is created to encompass each of the points of interest.
+            Once this is done, the algorithm picks a point to insert, finds which triangle this point is in and retriangulates it with the vertices of that triangle.
+            After this retriangulation is done the algorithm then preforms an "incircle" check for each of the newly created triangles. 
+            When doing the incircle check we draw the circumcircle for each of the triangles and if any other points lie in that circle then we must flip the edge that lies between the newly inserted point and the point that falls within the circle.
+            We then preform incircle check on the modified triangles and preform edge flips until no triangles violate the incircle property. 
+            Then we pick our next point and repeat the insertion process. Once we have all points inserted then we have a Delaunay Triangulation.
+            This visualisation program allows you to follow along with the incircle checks and edge flips of the triangulation.
+        </p>
+    </div>
+    <script src="../static/js/script.js"></script>
 </body>
 </html>

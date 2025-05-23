@@ -2,74 +2,112 @@ document.addEventListener('DOMContentLoaded', function() {
     const canvas = document.getElementById('drawingCanvas');
     const ctx = canvas.getContext('2d');
     const clearBtn = document.getElementById('clearBtn');
-    const coordinatesDiv = document.getElementById('coordinates');
     const runBtn = document.getElementById('runBtn');
     const pauseBtn = document.getElementById('pauseBtn');
     const speedSlider = document.getElementById('speed-slider');
     const speedValue = document.getElementById('speed-value');
+    const featureToggle = document.getElementById('featureToggle');
+    const onLabel = document.getElementById('on-or-off');
+    const submitBtn = document.getElementById('submitBtn');
+    const toggleLabel = document.getElementById('toggle-label');
+
     
     let points = [];
     let animationDelay = 1000; // Default delay (1 second)
     let currentAnimationStep = 0;
     let animationSequence = [];
-    let isAnimating = false;
     let animationTimeout = null;
-    // Add these variables at the top with your other declarations
-    let isPaused = false;
-    let pauseResumeCallback = null;
-
+    let manual = false;
+    let paused = false;
 
     ///////
     //Event Handlers
     //////
-    pauseBtn.addEventListener('click', function() {
-        if (isAnimating) {
-            if (isPaused) {
-                // Resume animation
-                isPaused = false;
-                this.textContent = 'Pause';
-                if (pauseResumeCallback) {
-                    pauseResumeCallback();
+    submitBtn.addEventListener('click', function(){
+        animationSequence = [];
+        currentAnimationStep = 0;
+        getSequence();
+        runBtn.disabled = false;
+        paused = false;
+        pauseBtn.textContent = "Pause";
+    });
+    featureToggle.addEventListener('change', function() {
+        toggleState = this.checked;
+        if (toggleState) {
+            toggleLabel.textContent = "Manual";
+            runBtn.textContent = "Next";
+            manual = true;
+            pauseBtn.disabled = true;
+            paused = true;
+            if(submitBtn.disabled != true){
+                pauseBtn.textContent = "Resume";
+            }
+            
+            if(animationSequence.length>0&&currentAnimationStep<animationSequence.length-1){
+                runBtn.disabled = false;
+            }
+            
+        } else {
+            toggleLabel.textContent = "Automatic";
+            runBtn.textContent = "Run";
+            manual = false;
+            
+            if(pauseBtn.textContent == "Resume"){
+                paused = true;
+            }
+            if(currentAnimationStep > 0){
+                runBtn.disabled = true;
+                if(currentAnimationStep<animationSequence.length-1){
+                    pauseBtn.disabled = false;
                 }
-            } else {
-                // Pause animation
-                isPaused = true;
-                this.textContent = 'Resume';
-                clearTimeout(animationTimeout);
+                
             }
         }
     });
+    pauseBtn.addEventListener('click', function() {
+        if(!paused){
+            paused = true;
+            this.textContent = 'Resume';
+        }else{
+            paused = false;
+            this.textContent = 'Pause';
+            drawStep();
+        }
+    });
     clearBtn.addEventListener('click', function() {
-        stopAnimation();
+        if (animationTimeout) {
+            clearTimeout(animationTimeout);
+        }
+        paused = false;
+        pauseBtn.disabled = true;
+        runBtn.disabled = true;
+        pauseBtn.textContent = 'Pause';
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         points = [];
-        coordinatesDiv.innerHTML = '';
-        runBtn.disabled = true; // Disable run button when clearing
-        
+        animationSequence = [];
+        currentAnimationStep = 0;
+        submitBtn.disabled = true; // Disable button when clearing
         fetch('/clear_points', {
             method: 'POST',
         });
     });
     speedSlider.addEventListener('input', function() {
-        animationDelay = 1010 - this.value; // Invert so higher slider = faster
+        animationDelay = 2010 - this.value; // Invert so higher slider = faster
         speedValue.textContent = animationDelay + 'ms';
-        
-        // If animation is running, update the delay immediately
-        if (isAnimating) {
-            // No need to stop/restart, the next step will use the new delay
-        }
     });
     canvas.addEventListener('click', function(e) {
         const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        drawPoint(x, y);
-        points.push({x, y});
-        
+        const x = roundToDecimal(e.clientX - rect.left,2);
+        const y = roundToDecimal(e.clientY - rect.top,2);
+        drawPoint(x, y,'red');
+        // Check if any point in the array has the same x and y
+        const pointExists = points.some(point => point.x === x && point.y === y);
+        if (!pointExists) {
+            points.push({x, y});
+        }
         // Enable/disable run button based on point count
-        runBtn.disabled = points.length < 3;
-        
+        submitBtn.disabled = points.length < 3;
         // Send to server
         fetch('/save_point', {
             method: 'POST',
@@ -79,7 +117,13 @@ document.addEventListener('DOMContentLoaded', function() {
             body: JSON.stringify({x, y}),
         });
     });
-    runBtn.addEventListener('click', drawSequence);
+    runBtn.addEventListener('click', function() {
+        if(!manual){
+            runBtn.disabled = true;
+            pauseBtn.disabled = false;
+        }
+        drawStep();
+    });
     
     // Load existing points on page load
     // Modify your initial points load to check count
@@ -87,66 +131,26 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             points = data.points.map(p => ({x: p[0], y: p[1]}));
-            points.forEach(p => drawPoint(p.x, p.y));
+            points.forEach(p => drawPoint(p.x, p.y,'red'));
             // Set initial run button state
-            runBtn.disabled = points.length < 3;
+            submitBtn.disabled = points.length < 3;
         });
     ////////
     //Async Functions
     ////////
-    async function drawSequence() {
-        if (isAnimating) return; // Prevent multiple clicks
-        
-        runBtn.disabled = true;
-        isAnimating = true;
-        currentAnimationStep = 0;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        coordinatesDiv.innerHTML = '';
-        
+    async function getSequence() {
         const response = await fetch('/get_drawing_sequence');
         animationSequence = await response.json();
-        
-        const statusDiv = document.createElement('div');
-        statusDiv.style.marginTop = '10px';
-        statusDiv.style.fontWeight = 'bold';
-        coordinatesDiv.appendChild(statusDiv);
-        
         zoomToFit(animationSequence);
-        animateStep(statusDiv);
     }
     ////////
     //Helper Functions
     ////////
-    function drawPoint(x, y, fill='red') {
-        ctx.beginPath();
-        ctx.arc(x, y, 5, 0, Math.PI * 2);
-        ctx.fillStyle = fill;
-        ctx.fill();
-        ctx.closePath();
-    }
-    function animateStep(statusDiv) {
-        if (currentAnimationStep >= animationSequence.length) {
-            statusDiv.textContent = 'Drawing complete!';
-            runBtn.disabled = false;
-            isAnimating = false;
-            isPaused = false;
-            document.getElementById('pauseBtn').textContent = 'Pause';
-            return;
-        }
-        
-        if (isPaused) {
-            // Store the callback to resume from this point
-            pauseResumeCallback = () => {
-                pauseResumeCallback = null;
-                animationTimeout = setTimeout(() => animateStep(statusDiv), animationDelay);
-            };
-            return;
-        }
-        
+    function drawStep(){
+        if(currentAnimationStep >= animationSequence.length){return;}
+        if(!manual && paused){return;}
         const step = animationSequence[currentAnimationStep];
         ctx.clearRect(-10000, -10000, 20000, 20000);
-        
-        statusDiv.textContent = `Drawing step ${currentAnimationStep + 1} of ${animationSequence.length}...`;
         
         // Draw points
         step.points.forEach(([x, y], idx) => {
@@ -155,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Draw uninserted points
         step.uninserted_points.forEach(([x, y], idx) => {
-            drawPoint(x, y, 'blue');
+            drawPoint(x, y, 'red');
         });
 
         // Draw edges
@@ -163,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
             ctx.beginPath();
             ctx.moveTo(x1, y1);
             ctx.lineTo(x2, y2);
-            ctx.strokeStyle = `blue`;
+            ctx.strokeStyle = `black`;
             ctx.lineWidth = 2;
             ctx.stroke();
         });
@@ -174,16 +178,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         currentAnimationStep++;
-        animationTimeout = setTimeout(() => animateStep(statusDiv), animationDelay);
-    }
-    function stopAnimation() {
-        if (animationTimeout) {
-            clearTimeout(animationTimeout);
+        if(!manual){
+            animationTimeout = setTimeout(() => drawStep(), animationDelay);
         }
-        isAnimating = false;
-        isPaused = false;
-        runBtn.disabled = false;
-        pauseBtn.textContent = 'Pause';
+        
+        if(currentAnimationStep >= animationSequence.length){
+            runBtn.disabled = true;
+            pauseBtn.disabled = true;
+            return;
+        }
+    }
+    function drawPoint(x, y, fill='blue') {
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = fill;
+        ctx.fill();
+        ctx.closePath();
     }
     function drawCircle(x, y, radius) {
         ctx.beginPath();
@@ -248,5 +258,9 @@ document.addEventListener('DOMContentLoaded', function() {
             width: (maxX - minX) + padding * 2,
             height: (maxY - minY) + padding * 2
         };
+    }
+    function roundToDecimal(num, decimals) {
+      const factor = 10 ** decimals;
+      return Math.round(num * factor) / factor;
     }
 });
